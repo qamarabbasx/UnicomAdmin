@@ -106,7 +106,6 @@
     // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const analytics = getAnalytics(app);
-    console.log(analytics)
     const database = getFirestore(app);
 
 
@@ -119,8 +118,8 @@
       });
       return list;
     }
-    const messageReports = await reports('Reported_Chat_Messages');
-    console.log('messageReports', messageReports);
+    // const messageReports = await reports('Reported_Chat_Messages');
+    // console.log('messageReports', messageReports);
     // const commentsReports = await reports('Reported_Comments_Data');
     // console.log('commentsReports', commentsReports);
     // const postsReports = await reports('Reported_Posts_Data');
@@ -251,9 +250,12 @@
         const postsReports = await reports('Reported_Posts_Data');
         dummyData = postsReports;
         console.log('postsReports', postsReports);
+
+        // Todo: delete post button
         const postDeleted = await getSingleDocument('posts', postsReports[0].itemId, {
           isDeleted: true,
         });
+        //TODO: button to handle mark as resolved
         const resolveStatus = await getSingleDocument(
           'Reported_Posts_Data',
           postsReports[0].id,
@@ -261,9 +263,11 @@
             status: 'resolved',
           },
         );
+
+        // TODO: block user or update user button
         const update = await getSingleDocument(
           'Users',
-          messageReports[0].userId,
+          postsReports[0].userId,
           updateData,
         );
         console.log('update user', update)
