@@ -87,7 +87,7 @@
     // Import the functions you need from the SDKs you need
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-analytics.js";
-    import { getFirestore, collection, getDocs, doc, updateDoc, query, where, addDoc } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, getDoc, doc, updateDoc, query, where, addDoc } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 
     import { ref, set } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
 
@@ -109,84 +109,60 @@
     console.log(analytics)
     const database = getFirestore(app);
 
+
     // Reported messeges here
     async function reports(collectionName) {
       const data = collection(database, collectionName);
       const dataSnapshot = await getDocs(data);
-      const list = dataSnapshot.docs.map((doc) => doc.data());
+      const list = dataSnapshot.docs.map((doc) => {
+        return { id: doc.id, ...doc.data() };
+      });
       return list;
     }
     const messageReports = await reports('Reported_Chat_Messages');
-    console.log('messageReports', messageReports)
-    const commentsReports = await reports('Reported_Comments_Data');
-    console.log('commentsReports', commentsReports)
-    const postsReports = await reports('Reported_Posts_Data');
-    console.log('postsReports', postsReports)
+    console.log('messageReports', messageReports);
+    // const commentsReports = await reports('Reported_Comments_Data');
+    // console.log('commentsReports', commentsReports);
+    // const postsReports = await reports('Reported_Posts_Data');
+    // console.log('postsReports', postsReports);
 
-    // reported posts here
-    // async function Reported_Comments_Data() {
-    //   const data = collection(database, 'Reported_Comments_Data');
-    //   const dataSnapshot = await getDocs(data);
-    //   const list = dataSnapshot.docs.map((doc) => doc.data());
-    //   return list;
-    // }
+    async function getSingleDocument(collectionPath, docId, updateData = null) {
+      const docRef = doc(database, collectionPath, docId);
+      const docSnapshot = await getDoc(docRef);
 
-    // get document by doc_id and update its status from pending to resolved
-    async function updateDocument(collectionName, docId, data) {
-      const docRef = doc(database, collectionName, docId);
-      await updateDoc(docRef, data);
-      console.log('Document update successfully  ')
-    }
-
-    // get one document by doc_id
-    async function getDocument(collectionName, docId) {
-      const docRef = doc(database, collectionName, docId);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        console.log("Document data:", docSnap.data());
+      if (docSnapshot.exists()) {
+        if (updateData) {
+          await updateDoc(docRef, updateData);
+        }
+        return { docId, ...docSnapshot.data() };
       } else {
-        // doc.data() will be undefined in this case
-        console.log("No such document!");
+        return null;
       }
     }
-    // const doc = await getDocument('Reported_Posts_Data', '1')
+    const updateData = {
+      block: true,
+      isDeleted: true,
+      gill: 'pizzaDone from code dynamically',
+      blockReason: 'offensive message , ja tur ja',
+    };
 
-
-    // let docId = merchantID.toString() + '_' + merchantKey
-
-    // create collection called comments
-    async function createDocument(collectionName, data) {
-      // Add a new document with a generated ID
-      const collectionRef = collection(database, collectionName);
-      const docRef = await addDoc(collectionRef, data);
-      return docRef;
-    }
-    // for (let i = 0; i < 10; i++) {
-    //   const comment = await createDocument('posts', { name: `post ${i + 1}`, description: `post ${i + 1} description` })
-    //   console.log('comment', comment)
-    // }
-
-
-    // find user by id and update
-    async function findUserByIdAndUpdate(id, data) {
-      const usersCollection = collection(database, "Users");
-      const usersQuery = query(usersCollection, where("id", "==", id));
-      const querySnapshot = await getDocs(usersQuery);
-
-      // Check if there are any matching documents
-      if (!querySnapshot.empty) {
-        // Get the reference to the first matching document
-        const docSnapshot = querySnapshot.docs[0];
-        const userRef = doc(usersCollection, docSnapshot.id);
-
-        // Update the document with the provided data
-        await updateDoc(userRef, data);
-        console.log('Document update successfully  ')
-      }
-    }
-    const update = await findUserByIdAndUpdate(messageReports[0].userId, { block: true, gill: 'pizzaDone from code dynamically', blockReason: 'offensive message' })
-
-
+    // const update = await getSingleDocument(
+    //   'Users',
+    //   messageReports[0].userId,
+    //   updateData,
+    // );
+    // const postDeleted = await getSingleDocument('posts', postsReports[0].itemId, {
+    //   isDeleted: true,
+    // });
+    // const resolveStatus = await getSingleDocument(
+    //   'Reported_Posts_Data',
+    //   postsReports[0].id,
+    //   {
+    //     status: 'resolved',
+    //   },
+    // );
+    // console.log('update', update);
+    // console.log('resolveStatus', resolveStatus);
 
     // Add event listeners using JavaScript
     document.getElementById('addStudentRecord').addEventListener('click', () => showFileInput('student'));
@@ -272,7 +248,27 @@
         });
       }
       else if (reportType == 'posts') {
-        dummyData = postReports;
+        const postsReports = await reports('Reported_Posts_Data');
+        dummyData = postsReports;
+        console.log('postsReports', postsReports);
+        const postDeleted = await getSingleDocument('posts', postsReports[0].itemId, {
+          isDeleted: true,
+        });
+        const resolveStatus = await getSingleDocument(
+          'Reported_Posts_Data',
+          postsReports[0].id,
+          {
+            status: 'resolved',
+          },
+        );
+        const update = await getSingleDocument(
+          'Users',
+          messageReports[0].userId,
+          updateData,
+        );
+        console.log('update user', update)
+        console.log('postDeleted', postDeleted);
+        console.log('resolveStatus', resolveStatus);
       }
       else if (reportType == 'contacts') {
         dummyData = messageReports;
