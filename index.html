@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Unicom Admin Panel</title>
+  <link rel="stylesheet" href="admin.css" />
+  <!-- Font Awesome Cdn Link -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+
+</head>
+
+<body>
+  <div class="container">
+    <nav>
+      <ul>
+        <li><a href="#" class="logo">
+            <span class="nav-item">Admin Panel</span>
+          </a></li>
+        <li><a href="index.html">
+            <i class="fas fa-home"></i>
+            <span class="nav-item">Dashboard</span>
+          </a></li>
+        <li><a href="#" id="addStudentRecord">
+            <i class="fas fa-user"></i>
+            <span class="nav-item">Add Student Record</span>
+          </a></li>
+        <li><a href="#" id="addCourseRecord">
+            <i class="fas fa-wallet"></i>
+            <span class="nav-item">Add Course Record</span>
+          </a></li>
+        <li><a href="#" id="viewReports">
+            <i class="fas fa-chart-bar"></i>
+            <span class="nav-item">View Reports</span>
+          </a></li>
+
+
+      </ul>
+    </nav>
+
+    <section class="main">
+      <div class="main-top">
+        <h1> UNICOM - Admin Dashboard</h1>
+
+      </div>
+
+      <section class="main-course">
+        <!-- File input for adding student records -->
+        <form action="" enctype="multipart/form-data" style="display: none;" id="studentForm">
+          <label for="studentFile">Select a JSON file for Student Record:</label>
+          <input type="file" id="studentFile" class="file-upload" name="studentFile" accept=".json" />
+          <br /><br />
+          <input type="button" value="Submit" id="submitStudent" />
+        </form>
+
+        <!-- File input for adding course records -->
+        <form action="" enctype="multipart/form-data" style="display: none;" id="courseForm">
+          <label for="courseFile">Select a JSON file for Course Record:</label>
+          <input type="file" id="courseFile" class="file-upload" name="courseFile" accept=".json" />
+          <br /><br />
+          <input type="button" value="Submit" id="submitCourse" />
+        </form>
+        <button id="toggleReportButtons">View Reports</button>
+        <div id="reportButtons" style="display: none;">
+
+          <button id="viewReportedComments">Reported Comments</button>
+          <button id="viewReportedPosts">Reported Posts</button>
+          <button id="viewReportedContacts">Reported Contacts</button>
+          <button id="viewReportedImages">Reported Images</button>
+        </div>
+        <!-- Table to display the reports -->
+        <table class="report-table" style="display: none;" id="reportTable">
+          <thead>
+            <tr>
+              <th>Report Title</th>
+              <th>Report Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Report data will be inserted here dynamically -->
+          </tbody>
+        </table>
+      </section>
+
+  </div>
+  <script type="module">
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-analytics.js";
+    import { getFirestore, collection, getDocs, doc, updateDoc, query, where, addDoc } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+
+    import { ref, set } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
+
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAgEC_G_ni6xVmU19W2BGQvKLFSqJxB7Yc",
+      authDomain: "adminunicom-77fd2.firebaseapp.com",
+      databaseURL: "https://adminunicom-77fd2-default-rtdb.firebaseio.com",
+      projectId: "adminunicom-77fd2",
+      storageBucket: "adminunicom-77fd2.appspot.com",
+      messagingSenderId: "860031065903",
+      appId: "1:860031065903:web:ee51dcdaed8819d6b7cbda",
+      measurementId: "G-8MZYMPG5KS"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    console.log(analytics)
+    const database = getFirestore(app);
+
+    // Reported messeges here
+    async function reports(collectionName) {
+      const data = collection(database, collectionName);
+      const dataSnapshot = await getDocs(data);
+      const list = dataSnapshot.docs.map((doc) => doc.data());
+      return list;
+    }
+    const messageReports = await reports('Reported_Chat_Messages');
+    console.log('messageReports', messageReports)
+    const commentsReports = await reports('Reported_Comments_Data');
+    console.log('commentsReports', commentsReports)
+    const postsReports = await reports('Reported_Posts_Data');
+    console.log('postsReports', postsReports)
+
+    // reported posts here
+    // async function Reported_Comments_Data() {
+    //   const data = collection(database, 'Reported_Comments_Data');
+    //   const dataSnapshot = await getDocs(data);
+    //   const list = dataSnapshot.docs.map((doc) => doc.data());
+    //   return list;
+    // }
+
+    // get document by doc_id and update its status from pending to resolved
+    async function updateDocument(collectionName, docId, data) {
+      const docRef = doc(database, collectionName, docId);
+      await updateDoc(docRef, data);
+      console.log('Document update successfully  ')
+    }
+
+    // get one document by doc_id
+    async function getDocument(collectionName, docId) {
+      const docRef = doc(database, collectionName, docId);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        console.log("Document data:", docSnap.data());
+      } else {
+        // doc.data() will be undefined in this case
+        console.log("No such document!");
+      }
+    }
+    // const doc = await getDocument('Reported_Posts_Data', '1')
+
+
+    // let docId = merchantID.toString() + '_' + merchantKey
+
+    // create collection called comments
+    async function createDocument(collectionName, data) {
+      // Add a new document with a generated ID
+      const collectionRef = collection(database, collectionName);
+      const docRef = await addDoc(collectionRef, data);
+      return docRef;
+    }
+    // for (let i = 0; i < 10; i++) {
+    //   const comment = await createDocument('posts', { name: `post ${i + 1}`, description: `post ${i + 1} description` })
+    //   console.log('comment', comment)
+    // }
+
+
+    // find user by id and update
+    async function findUserByIdAndUpdate(id, data) {
+      const usersCollection = collection(database, "Users");
+      const usersQuery = query(usersCollection, where("id", "==", id));
+      const querySnapshot = await getDocs(usersQuery);
+
+      // Check if there are any matching documents
+      if (!querySnapshot.empty) {
+        // Get the reference to the first matching document
+        const docSnapshot = querySnapshot.docs[0];
+        const userRef = doc(usersCollection, docSnapshot.id);
+
+        // Update the document with the provided data
+        await updateDoc(userRef, data);
+        console.log('Document update successfully  ')
+      }
+    }
+    const update = await findUserByIdAndUpdate(messageReports[0].userId, { block: true, gill: 'pizzaDone from code dynamically', blockReason: 'offensive message' })
+
+
+
+    // Add event listeners using JavaScript
+    document.getElementById('addStudentRecord').addEventListener('click', () => showFileInput('student'));
+    document.getElementById('addCourseRecord').addEventListener('click', () => showFileInput('course'));
+    document.getElementById('viewReports').addEventListener('click', () => showUserReports());
+
+    document.getElementById('submitStudent').addEventListener('click', () => uploadToFirebase('student'));
+    document.getElementById('submitCourse').addEventListener('click', () => uploadToFirebase('course'));
+
+    function showFileInput(type) {
+      const studentForm = document.getElementById('studentForm');
+      const courseForm = document.getElementById('courseForm');
+
+      // Hide both file input forms
+      studentForm.style.display = 'none';
+      courseForm.style.display = 'none';
+
+      // Show the file input form based on the type
+      if (type === 'student') {
+        studentForm.style.display = 'block';
+      } else if (type === 'course') {
+        courseForm.style.display = 'block';
+      }
+    }
+
+    function uploadToFirebase(type) {
+      const fileInput = document.getElementById(`${type}File`);
+      const file = fileInput.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          const fileData = event.target.result;
+          // Assuming you have a specific database reference for student and course records
+          const recordsRef = ref(database, `${type}Records`);
+          // Push the file data to Firebase
+          set(recordsRef, JSON.parse(fileData));
+          alert(`${type} record uploaded to Firebase.`);
+        };
+        reader.readAsText(file);
+      } else {
+        alert('Please select a file.');
+      }
+    }
+
+    document.getElementById('viewReports').addEventListener('click', () => {
+      // Show the report table
+      document.getElementById('reportTable').style.display = 'table';
+    });
+
+    document.getElementById('toggleReportButtons').addEventListener('click', () => {
+      const reportButtons = document.getElementById('reportButtons');
+      reportButtons.style.display = 'block';
+    });
+
+    document.getElementById('viewReportedComments').addEventListener('click', () => viewUserReports('comments'));
+    document.getElementById('viewReportedPosts').addEventListener('click', () => viewUserReports('posts'));
+    document.getElementById('viewReportedContacts').addEventListener('click', () => viewUserReports('contacts'));
+    document.getElementById('viewReportedImages').addEventListener('click', () => viewUserReports('images'));
+
+    async function viewUserReports(reportType) {
+      const reportTable = document.getElementById('reportTable');
+      const tbody = reportTable.querySelector('tbody');
+
+      // Clear existing table data
+      tbody.innerHTML = '';
+
+      // Fetch and display report data based on the report type
+      // You should fetch data from Firebase Firestore and populate the table here
+
+      // For now, let's create dummy data for demonstration
+      let dummyData;
+      if (reportType == 'comments') {
+        dummyData = await Reported_Comments_Data()
+        dummyData.forEach(data => {
+          console.log('data', data)
+          const row = document.createElement('tr');
+          row.innerHTML = `
+          <td>${data.reportTitle}</td>
+          <td>${data.post_description}</td>
+          <td>${data.post_image_url}</td>
+        `;
+          tbody.appendChild(row);
+        });
+      }
+      else if (reportType == 'posts') {
+        dummyData = postReports;
+      }
+      else if (reportType == 'contacts') {
+        dummyData = messageReports;
+      }
+      else if (reportType == 'images') {
+        dummyData = [
+          { post_image_url: '"https://firebasestorage.googleapis.com/v0/b/socia…media&token=3370b4c1-d1ff-43af-ba5f-937cce872aa4"', post_description: 'shut up', comment_text: 'Great' },
+          { studentID: 'F2016065036', description: 'Inappropriate image' },
+          { studentID: 'F2016065038', description: 'Offensive image' },
+          { studentID: 'F2016065070', description: 'Inappropriate image' },
+          { studentID: 'F2016065056', description: 'Offensive image' },
+          // Add more dummy data as needed
+        ];
+        dummyData.forEach(data => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+          <td>${data.studentID}</td>
+          <td>${data.description}</td>
+        `;
+          tbody.appendChild(row);
+        });
+      }
+      // const dummyData = [
+      //   { studentID: 'F2016065036', description: 'Inappropriate comment' },
+      //   { studentID: 'F2016065038', description: 'Offensive image' },
+      //   { studentID: 'F2016065070', description: 'Inappropriate comment' },
+      //   { studentID: 'F2016065056', description: 'Offensive image' },
+      //   // Add more dummy data as needed
+      // ];
+
+
+      // Show the report table
+      reportTable.style.display = 'table';
+    }
+  </script>
+</body>
+
+</html>
