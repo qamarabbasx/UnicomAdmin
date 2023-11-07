@@ -1,79 +1,83 @@
-endpoint :localhost:8005/change-authority
-payload: {
-    "userId": "0QRhEUgqlUNkI8Py4ZzZ8k5L37y1",
-    "authority": []
-}
+const data = {
+  id: 'b34d3051-ab8b-42ce-b7a6-6f904d6ddf90',
+  collectionProperties: [
+    {
+      id: '1c00c396-9888-42cd-b651-8b0aa5562412',
+      name: 'ali',
+      nftId: '5e76f023-12c6-4755-81c5-3e1c276ca00a',
+      collectionId: 'b34d3051-ab8b-42ce-b7a6-6f904d6ddf90',
+      quantityCount: 1,
+      insertedDate: '2023-10-31T09:51:36.851Z',
+      updatedDate: '2023-10-31T09:51:36.851Z',
+      propertyValues: [
+        {
+          id: '7373d6b9-cafc-4f41-9e2c-7d8240d15662',
+          nftPropertyValueId: '1c00c396-9888-42cd-b651-8b0aa5562412',
+          quantity: 1,
+          value: 'ali',
+          insertedDate: '2023-10-31T09:51:38.940Z',
+          updatedDate: '2023-10-31T09:51:38.940Z',
+        },
+        {
+          id: '746519e2-f712-492f-b818-49854dfe815b',
+          nftPropertyValueId: '1c00c396-9888-42cd-b651-8b0aa5562412',
+          quantity: 1,
+          value: 'ali',
+          insertedDate: '2023-10-31T09:51:38.947Z',
+          updatedDate: '2023-10-31T09:51:38.947Z',
+        },
+        {
+          id: '7373d6b9-cafc-4f41-9e2c-7d8240d15662',
+          nftPropertyValueId: '1c00c396-9888-42cd-b651-67890',
+          quantity: 1,
+          value: 'ali',
+          insertedDate: '2023-10-31T09:51:38.940Z',
+          updatedDate: '2023-10-31T09:51:38.940Z',
+        },
+      ],
+    },
+  ],
+};
 
-endpoint :localhost:8005/change-user-name
-payload: {
-    "itemId": "0QRhEUgqlUNkI8Py4ZzZ8k5L37y1",
-    "name": "Qamar by updating"
-}
+const reducedPropertyValues = (data) => {
+  const reducedData = { ...data }; // Creating a copy to avoid modifying the original object
 
-endpoint :localhost:8005/change-wallet-name
-payload: {
-    "itemId": "aquila_73_1",
-    "name": "sampletest1"
-}
+  reducedData.collectionProperties = reducedData.collectionProperties.map(
+    (property) => {
+      const valuesMatch = property.propertyValues.every((val, index, arr) => {
+        const nextVal = arr[index + 1];
+        return (
+          nextVal &&
+          val.value === nextVal.value &&
+          val.nftPropertyValueId === nextVal.nftPropertyValueId
+        );
+      });
 
-endpoint :localhost:8005/change-wallet-status
-payload: {
-    "itemId": "aquila_73_1",
-    "isActive": 1
-}
+      if (
+        valuesMatch &&
+        property.propertyValues.every(
+          (val) => val.nftPropertyValueId === property.id,
+        )
+      ) {
+        const totalQuantity = property.propertyValues.reduce(
+          (acc, val) => acc + val.quantity,
+          0,
+        );
 
-endpoint :localhost:8005/change-user-status
-payload: {
-    "itemId": "0QRhEUgqlUNkI8Py4ZzZ8k5L37y1",
-    "isActive": 1
-}
+        property.propertyValues = [
+          {
+            ...property.propertyValues[0], // Take any element from propertyValues array as the reduced object
+            quantity: totalQuantity,
+          },
+        ];
+      }
 
-endpoint :localhost:8005/delete-wallet
-payload: {
-    "itemId": "aquila_73_1",
-    "isDeleted": 0
-}
+      return property;
+    },
+  );
 
-endpoint :localhost:8005/delete-user
-payload: {
-    "itemId": "0QRhEUgqlUNkI8Py4ZzZ8k5L37y1",
-    "isDeleted": 0
-}
+  return reducedData;
+};
 
-endpoint :localhost:8005/add-admin-panel-accounts
-payload: {
-    "name": "Qamar Abbas via admin api",
-    "loginEmail": "haroons@yopmail.com",
-    "accountType":0,
-    "password":"password",
-    "confirmPassword":"password",
-    "submittedBy": "100",
-    "walletId":"nmi_100_1"
-}
-
-endpoint :localhost:8005/add-user
-payload: {
-    "name": "Test NmI Merchant",
-    "email": "reply122s.qamar@gmail.com",
-    "loginEmail": "reply12s.qamar@gmail.com",
-    "mid": "10122",
-    "api_key": "mytestapikey",
-    "paymentMethod": 2,
-    "accountType":2,
-    "card_type":1,
-    "nmi_key": "11",
-    "nmi_secret": "22",
-    "nmi_web_hook": "",
-    "aquila_key": "",
-    "aquila_secret": "",
-    "aquila_web_hook": "",
-    "password":"password",
-    "confirmPassword":"password",
-    "minimumAmount":"10.15",
-    "platformFeePrcnt": 0.5,
-    "submittedBy": "100",
-    "txFeeDollar": 0.7,
-    "addGasFee": 0,
-    "parentMerchant":"",
-    "accessAdminPanel": true
-}
+const result = reducedPropertyValues(data);
+console.log(result.collectionProperties[0].propertyValues);

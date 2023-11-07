@@ -1,5 +1,6 @@
 const { initializeApp } = require('firebase/app');
 const { getAnalytics } = require('firebase/analytics');
+const { getStorage, ref, uploadBytes } = require('firebase/storage');
 const {
   getFirestore,
   collection,
@@ -27,6 +28,19 @@ const firebaseConfig = {
   // Initialize Firebase
   const app = initializeApp(firebaseConfig);
   const database = getFirestore(app);
+  const storage = getStorage(app);
+  // console.log('storage', storage);
+  // const localFilePath = '1 – 37.jpg'; // Path to your local image file
+  // const file = fs.readFileSync(localFilePath);
+
+  const storageRef = ref(storage, 'images/image.jpg'); // Destination path in the Storage bucket
+
+  // Upload file to Firebase Storage
+  const localFilePath = '1 – 37.jpg'; // Path to your local image file
+  const file = fs.readFileSync(localFilePath);
+  const snapshot = await uploadBytes(storageRef, file);
+
+  console.log('Uploaded a file:', snapshot.ref.fullPath);
 
   // Reported messeges here
   async function reports(collectionName) {
